@@ -18,7 +18,6 @@ pub struct Connection {
 
 impl Connection {
     pub fn new(socket_id: String, socket: WebSocket) -> Arc<Self> {
-        let (sender, mut receiver) = mpsc::unbounded_channel();
         let connection = Arc::new(Self {
             socket_id,
             socket: Mutex::new(socket),
