@@ -4,7 +4,8 @@ use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
+use tokio::task;
 use web_socket::{CloseReason, Event, Frame};
 
 pub struct Connection {
@@ -13,26 +14,49 @@ pub struct Connection {
     pub subscribed_channels: Mutex<HashSet<String>>,
     pub user_id: Mutex<Option<String>>,
     pub user_data: Mutex<Option<Value>>,
+    sender: mpsc::UnboundedSender<String>,
 }
 
 impl Connection {
     pub fn new(socket_id: String, socket: WebSocket) -> Arc<Self> {
-        Arc::new(Self {
+        let (sender, mut receiver) = mpsc::unbounded_channel();
+        let connection = Arc::new(Self {
             socket_id,
             socket: Mutex::new(socket),
             subscribed_channels: Mutex::new(HashSet::new()),
             user_id: Mutex::new(None),
             user_data: Mutex::new(None),
-        })
+            sender,
+        });
+        let conn_clone = Arc::clone(&connection);
+        task::spawn(async move {
+            while let Some(message) = receiver.recv().await {
+                if let Err(e) = conn_clone.send_message_internal(message).await {
+                    Log::error(format!("Failed to send message: {}", e));
+                    // Optionally break the loop if you want to stop on first error
+                }
+            }
+        });
+        connection
     }
 
     pub async fn send_message(&self, message: String) {
         Log::info(format!(
-            "Sending message to {}: {}",
+            "Queueing message for {}: {}",
             self.socket_id, message
         ));
+        if let Err(e) = self.sender.send(message) {
+            Log::error(format!("Failed to queue message: {}", e));
+        }
+    }
+
+    async fn send_message_internal(
+        &self,
+        message: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut socket = self.socket.lock().await;
-        socket.send(message.as_str()).await.expect("TODO: panic message");
+        socket.send(message.as_str()).await?;
+        Ok(())
     }
 
     pub async fn subscribe(&self, channel: String) {
@@ -66,8 +90,15 @@ impl Connection {
                 opcode: 8,
                 data: reason.to_bytes().as_ref(),
             })
-            .await.expect("TODO: panic message");
-        self.socket.lock().await.stream.flush().await.expect("TODO: panic message");
+            .await
+            .expect("TODO: panic message");
+        self.socket
+            .lock()
+            .await
+            .stream
+            .flush()
+            .await
+            .expect("TODO: panic message");
     }
 
     pub async fn recv(&self) -> std::io::Result<Event> {

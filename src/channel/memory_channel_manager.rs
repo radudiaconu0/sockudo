@@ -65,13 +65,11 @@ impl Channel for PublicChannel {
             Log::info(format!("Subscriber id {}", connection));
         }
 
-        tokio::join!(
-            async {
-                for connection in subscribers.values() {
-                    connection.send_message(cloned_message.clone()).await;
-                }
-            },
-        );
+        tokio::join!(async {
+            for connection in subscribers.values() {
+                connection.send_message(cloned_message.clone()).await;
+            }
+        },);
         let elapsed = chrono::Utc::now().signed_duration_since(now);
         Log::info(format!("Broadcast completed in {:?}", elapsed));
         Ok(())
@@ -239,6 +237,9 @@ impl ChannelManager for MemoryChannelManager {
         channel_type: ChannelType,
     ) -> Result<Arc<dyn Channel>, ChannelError> {
         let mut channels = self.channels.write().await;
+        if channels.contains_key(&name) {
+            return Ok(channels.get(&name).unwrap().clone());
+        }
         let channel: Arc<dyn Channel> = match channel_type {
             ChannelType::Public => Arc::new(PublicChannel {
                 name: name.clone(),
@@ -253,12 +254,9 @@ impl ChannelManager for MemoryChannelManager {
                 subscribers: RwLock::new(HashMap::new()),
             }),
         };
-        if channels.contains_key(&name) {
-            Ok(channel)
-        } else {
-            channels.insert(name.clone(), channel.clone());
-            Ok(channel)
-        }
+
+        channels.insert(name.clone(), channel.clone());
+        Ok(channel)
     }
 
     async fn get_channel(&self, name: &str) -> Result<Option<Arc<dyn Channel>>, ChannelError> {
