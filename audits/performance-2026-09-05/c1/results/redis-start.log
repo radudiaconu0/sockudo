@@ -1,0 +1,44 @@
+ Image redis:7.4 Pulling 
+ 7e0eaf1f4c4e Pulling fs layer 0B
+ 49542ee7ed52 Pulling fs layer 0B
+ 75782e20ea1f Pulling fs layer 0B
+ 89670a7cec46 Pulling fs layer 0B
+ f5a6cd6f0c6a Pulling fs layer 0B
+ a790085820f3 Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 4f4fb700ef54 Already exists 0B
+ 7e0eaf1f4c4e Download complete 0B
+ 49542ee7ed52 Download complete 0B
+ 75782e20ea1f Downloading 8.389MB
+ 89670a7cec46 Download complete 0B
+ f5a6cd6f0c6a Download complete 0B
+ 75782e20ea1f Downloading 27.26MB
+ a790085820f3 Downloading 3.146MB
+ a790085820f3 Download complete 0B
+ 75782e20ea1f Download complete 0B
+ 75782e20ea1f Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 957137f9c513 Download complete 0B
+ f01e5f7998fd Download complete 0B
+ 75782e20ea1f Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 49542ee7ed52 Pull complete 0B
+ 89670a7cec46 Pull complete 0B
+ a790085820f3 Extracting 1B
+ 75782e20ea1f Pull complete 0B
+ 4f4fb700ef54 Pull complete 0B
+ 7e0eaf1f4c4e Pull complete 0B
+ f5a6cd6f0c6a Pull complete 0B
+ a790085820f3 Pull complete 0B
+ Image redis:7.4 Pulled 
+ Container sockudo-c1-indexes-postgres-1 Running 
+ Container sockudo-c1-indexes-mysql-1 Running 
+ Container sockudo-c1-indexes-redis-1 Creating 
+ Container sockudo-c1-indexes-redis-1 Created 
+ Container sockudo-c1-indexes-redis-1 Starting 
+ Container sockudo-c1-indexes-redis-1 Started 

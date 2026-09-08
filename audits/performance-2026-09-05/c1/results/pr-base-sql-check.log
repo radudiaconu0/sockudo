@@ -1,0 +1,33 @@
+    Checking sockudo-protocol v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-protocol)
+    Checking sockudo-filter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-filter)
+    Checking sockudo-core v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-core)
+warning: constant `CGROUP_V1_UNLIMITED_FLOOR` is never used
+  --> crates/sockudo-core/src/memory_pressure.rs:14:7
+   |
+14 | const CGROUP_V1_UNLIMITED_FLOOR: u64 = 1 << 60;
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `parse_linux_resident_memory_bytes` is never used
+   --> crates/sockudo-core/src/memory_pressure.rs:255:4
+    |
+255 | fn parse_linux_resident_memory_bytes(status: &str) -> Option<u64> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `parse_cgroup_limit` is never used
+   --> crates/sockudo-core/src/memory_pressure.rs:266:4
+    |
+266 | fn parse_cgroup_limit(value: &str, is_v1: bool) -> Option<u64> {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: `sockudo-core` (lib) generated 3 warnings
+    Checking sockudo-metrics v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-metrics)
+    Checking sockudo-webhook v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-webhook)
+    Checking sockudo-cache v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-cache)
+    Checking sockudo-queue v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-queue)
+    Checking sockudo-app v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-app)
+    Checking sockudo-rate-limiter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-rate-limiter)
+    Checking sockudo-adapter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-adapter)
+    Checking sockudo v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo-c1-pr/crates/sockudo-server)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.20s

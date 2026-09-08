@@ -1,0 +1,21 @@
+NOTICE:  drop cascades to 18 other objects
+DETAIL:  drop cascades to table c1_614677e1d7bf4b2b_version_streams
+drop cascades to table c1_614677e1d7bf4b2b_version_messages
+drop cascades to table c1_614677e1d7bf4b2b_version_entries
+drop cascades to table c1_614677e1d7bf4b2b_version_entries_c1
+drop cascades to table c1_614677e1d7bf4b2b_version_entries_ac
+drop cascades to function c1_614677e1d7bf4b2b_version_entries_acf()
+drop cascades to table c1_f105981765de49a9_version_streams
+drop cascades to table c1_f105981765de49a9_version_messages
+drop cascades to table c1_f105981765de49a9_version_entries
+drop cascades to table c1_f105981765de49a9_version_entries_c1
+drop cascades to table c1_f105981765de49a9_version_entries_ac
+drop cascades to function c1_f105981765de49a9_version_entries_acf()
+drop cascades to table c1_42e8e1e8a1034c4d_version_streams
+drop cascades to table c1_42e8e1e8a1034c4d_version_messages
+drop cascades to table c1_42e8e1e8a1034c4d_version_entries
+drop cascades to table c1_42e8e1e8a1034c4d_version_entries_c1
+drop cascades to table c1_42e8e1e8a1034c4d_version_entries_ac
+drop cascades to function c1_42e8e1e8a1034c4d_version_entries_acf()
+DROP SCHEMA
+CREATE SCHEMA

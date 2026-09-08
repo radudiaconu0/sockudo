@@ -1,3 +1,4 @@
+mod append_counts;
 mod store_impl;
 
 use sockudo_core::error::{Error, Result};
@@ -64,6 +65,7 @@ impl PostgresVersionStore {
 
         let store = Self { pool, tables };
         store.ensure_version_tables().await?;
+        store.ensure_append_counts().await?;
         Ok(store)
     }
 

@@ -1,0 +1,6 @@
+NOTICE:  drop cascades to 3 other objects
+DETAIL:  drop cascades to table c1_ab87db14412a4a56_version_streams
+drop cascades to table c1_ab87db14412a4a56_version_messages
+drop cascades to table c1_ab87db14412a4a56_version_entries
+DROP SCHEMA
+CREATE SCHEMA

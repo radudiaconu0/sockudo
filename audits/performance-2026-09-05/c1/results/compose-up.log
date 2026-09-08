@@ -1,0 +1,208 @@
+ Image mysql:8.4 Pulling 
+ Image postgres:17.6 Pulling 
+ 26eb9d6698f0 Pulling fs layer 0B
+ b12e28485eff Pulling fs layer 0B
+ d3c86b417a74 Pulling fs layer 0B
+ bec4c5f6b46d Pulling fs layer 0B
+ c1a8d43326b8 Pulling fs layer 0B
+ 19c1e4d5e56d Pulling fs layer 0B
+ 8a905d3b3fdf Pulling fs layer 0B
+ 3d7f10ed4edf Pulling fs layer 0B
+ ac21e899ba1c Pulling fs layer 0B
+ 1ff71ea7626e Pulling fs layer 0B
+ 4a399977b8a4 Pulling fs layer 0B
+ 51365f04b688 Pulling fs layer 0B
+ 23e324b994c6 Pulling fs layer 0B
+ e6a5751455f4 Pulling fs layer 0B
+ f7047d88fb1d Pulling fs layer 0B
+ 36d4eb47026a Pulling fs layer 0B
+ 25728ea3d6cc Pulling fs layer 0B
+ 7bd85ddce6ac Pulling fs layer 0B
+ 690e7081aba2 Pulling fs layer 0B
+ 151cf5cacbc6 Pulling fs layer 0B
+ fe4fdfae8861 Pulling fs layer 0B
+ 266c7c6a33be Pulling fs layer 0B
+ 02d5c5546489 Pulling fs layer 0B
+ 7448673bc12c Pulling fs layer 0B
+ bec4c5f6b46d Downloading 4.194MB
+ 690e7081aba2 Download complete 0B
+ bec4c5f6b46d Downloading 22.02MB
+ 26eb9d6698f0 Download complete 0B
+ 8a905d3b3fdf Download complete 0B
+ 36d4eb47026a Download complete 0B
+ e6a5751455f4 Download complete 0B
+ 1ff71ea7626e Download complete 0B
+ bec4c5f6b46d Downloading 36.7MB
+ 51365f04b688 Downloading 2.097MB
+ 4a399977b8a4 Download complete 0B
+ b12e28485eff Download complete 0B
+ d3c86b417a74 Download complete 0B
+ 19c1e4d5e56d Downloading 2.097MB
+ bec4c5f6b46d Downloading 46.14MB
+ 23e324b994c6 Download complete 0B
+ 266c7c6a33be Download complete 0B
+ 7448673bc12c Download complete 0B
+ 51365f04b688 Downloading 10.49MB
+ f7047d88fb1d Download complete 0B
+ 151cf5cacbc6 Download complete 0B
+ 02d5c5546489 Download complete 0B
+ 3d7f10ed4edf Download complete 0B
+ 19c1e4d5e56d Downloading 6.291MB
+ bec4c5f6b46d Download complete 0B
+ 25728ea3d6cc Downloading 1.049MB
+ 7bd85ddce6ac Downloading 1.049MB
+ 51365f04b688 Downloading 16.78MB
+ 19c1e4d5e56d Downloading 14.68MB
+ 51365f04b688 Downloading 24.12MB
+ 25728ea3d6cc Downloading 3.146MB
+ 7bd85ddce6ac Downloading 3.146MB
+ ac21e899ba1c Downloading 1.049MB
+ 19c1e4d5e56d Downloading 25.17MB
+ 51365f04b688 Download complete 0B
+ 25728ea3d6cc Download complete 0B
+ fe4fdfae8861 Downloading 1.049MB
+ 7bd85ddce6ac Download complete 0B
+ 51365f04b688 Extracting 1B
+ ac21e899ba1c Downloading 3.146MB
+ 19c1e4d5e56d Downloading 36.7MB
+ c1a8d43326b8 Downloading 1.049MB
+ fe4fdfae8861 Downloading 1.049MB
+ 51365f04b688 Extracting 1B
+ ac21e899ba1c Downloading 4.194MB
+ 19c1e4d5e56d Downloading 42.99MB
+ c1a8d43326b8 Downloading 8.389MB
+ fe4fdfae8861 Downloading 1.049MB
+ 51365f04b688 Extracting 1B
+ 19c1e4d5e56d Downloading 56.62MB
+ c1a8d43326b8 Downloading 18.87MB
+ ac21e899ba1c Download complete 0B
+ fe4fdfae8861 Downloading 2.097MB
+ 51365f04b688 Extracting 1B
+ 19c1e4d5e56d Downloading 67.11MB
+ c1a8d43326b8 Downloading 28.31MB
+ fe4fdfae8861 Downloading 3.146MB
+ 51365f04b688 Extracting 1B
+ c1a8d43326b8 Downloading 37.75MB
+ 541dad502f35 Downloading 1.049MB
+ 19c1e4d5e56d Downloading 75.5MB
+ 64896815bd4e Download complete 0B
+ fe4fdfae8861 Downloading 3.146MB
+ 51365f04b688 Extracting 1B
+ 19c1e4d5e56d Downloading 87.03MB
+ c1a8d43326b8 Downloading 46.48MB
+ 541dad502f35 Downloading 2.097MB
+ fe4fdfae8861 Downloading 4.194MB
+ 51365f04b688 Extracting 1B
+ 19c1e4d5e56d Downloading 101.7MB
+ c1a8d43326b8 Download complete 0B
+ 541dad502f35 Downloading 4.194MB
+ fe4fdfae8861 Downloading 5.243MB
+ b8c0a7b6017f Download complete 0B
+ c1a8d43326b8 Extracting 1B
+ 51365f04b688 Extracting 1B
+ 19c1e4d5e56d Downloading 114.3MB
+ 541dad502f35 Downloading 6.291MB
+ f9ddf7fc0e59 Downloading 3.146MB
+ fe4fdfae8861 Downloading 5.243MB
+ c1a8d43326b8 Extracting 1B
+ 51365f04b688 Pull complete 0B
+ 19c1e4d5e56d Downloading 127.9MB
+ 541dad502f35 Downloading 9.437MB
+ fe4fdfae8861 Downloading 6.291MB
+ f9ddf7fc0e59 Download complete 0B
+ 36d4eb47026a Pull complete 0B
+ c1a8d43326b8 Extracting 1B
+ 23e324b994c6 Pull complete 0B
+ 25728ea3d6cc Pull complete 0B
+ 7bd85ddce6ac Extracting 1B
+ 541dad502f35 Downloading 11.53MB
+ 19c1e4d5e56d Download complete 0B
+ fe4fdfae8861 Downloading 7.34MB
+ 690e7081aba2 Extracting 1B
+ c1a8d43326b8 Extracting 1B
+ 7bd85ddce6ac Pull complete 0B
+ 541dad502f35 Downloading 15.71MB
+ 8a905d3b3fdf Pull complete 0B
+ fe4fdfae8861 Downloading 9.437MB
+ 690e7081aba2 Pull complete 0B
+ 3d7f10ed4edf Pull complete 0B
+ c1a8d43326b8 Pull complete 0B
+ f7047d88fb1d Pull complete 0B
+ 151cf5cacbc6 Pull complete 0B
+ 541dad502f35 Download complete 0B
+ 1ff71ea7626e Pull complete 0B
+ fe4fdfae8861 Downloading 10.49MB
+ d3c86b417a74 Pull complete 0B
+ bec4c5f6b46d Extracting 1B
+ ac21e899ba1c Pull complete 0B
+ fe4fdfae8861 Downloading 12.58MB
+ bec4c5f6b46d Extracting 1B
+ bec4c5f6b46d Extracting 1B
+ fe4fdfae8861 Downloading 14.68MB
+ bec4c5f6b46d Extracting 1B
+ fe4fdfae8861 Downloading 17.83MB
+ b12e28485eff Pull complete 0B
+ bec4c5f6b46d Pull complete 0B
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 22.02MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 27.26MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 32.51MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 36.7MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 44.04MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 53.48MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 63.96MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 77.59MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 95.42MB
+ 19c1e4d5e56d Extracting 1B
+ fe4fdfae8861 Downloading 112.7MB
+ 19c1e4d5e56d Extracting 2B
+ fe4fdfae8861 Downloading 112.7MB
+ 19c1e4d5e56d Extracting 2B
+ fe4fdfae8861 Download complete 0B
+ fe4fdfae8861 Extracting 1B
+ 19c1e4d5e56d Extracting 2B
+ fe4fdfae8861 Extracting 1B
+ 19c1e4d5e56d Extracting 2B
+ fe4fdfae8861 Extracting 1B
+ 19c1e4d5e56d Extracting 2B
+ fe4fdfae8861 Extracting 1B
+ 19c1e4d5e56d Extracting 2B
+ fe4fdfae8861 Extracting 1B
+ 19c1e4d5e56d Extracting 2B
+ fe4fdfae8861 Extracting 1B
+ 26eb9d6698f0 Pull complete 0B
+ 19c1e4d5e56d Pull complete 0B
+ Image mysql:8.4 Pulled 
+ fe4fdfae8861 Extracting 1B
+ fe4fdfae8861 Extracting 1B
+ fe4fdfae8861 Extracting 1B
+ e6a5751455f4 Pull complete 0B
+ 4a399977b8a4 Pull complete 0B
+ 266c7c6a33be Pull complete 0B
+ 7448673bc12c Pull complete 0B
+ 02d5c5546489 Pull complete 0B
+ e6a5751455f4 Pull complete 0B
+ 4a399977b8a4 Pull complete 0B
+ 266c7c6a33be Pull complete 0B
+ 7448673bc12c Pull complete 0B
+ 02d5c5546489 Pull complete 0B
+ fe4fdfae8861 Pull complete 0B
+ Image postgres:17.6 Pulled 
+ Network sockudo-c1-indexes_default Creating 
+ Network sockudo-c1-indexes_default Created 
+ Container sockudo-c1-indexes-postgres-1 Creating 
+ Container sockudo-c1-indexes-mysql-1 Creating 
+ Container sockudo-c1-indexes-mysql-1 Created 
+ Container sockudo-c1-indexes-postgres-1 Created 
+ Container sockudo-c1-indexes-postgres-1 Starting 
+ Container sockudo-c1-indexes-mysql-1 Starting 
+ Container sockudo-c1-indexes-mysql-1 Started 
+ Container sockudo-c1-indexes-postgres-1 Started 

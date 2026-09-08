@@ -3,11 +3,11 @@ use super::types::*;
 use crate::error::{Error, Result};
 use crate::history::now_ms;
 use crate::versioned_messages::{
-    MessageAction, MessageSerial, validate_replay_continuity_iter, validate_version_chain,
-    validate_version_chain_iter,
+    MessageAction, MessageSerial, VersionSerial, ensure_same_chain,
+    validate_replay_continuity_iter, validate_version_chain,
 };
 use async_trait::async_trait;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -20,11 +20,83 @@ pub struct MemoryVersionStore {
 struct MemoryVersionChannel {
     stream_id: String,
     next_delivery_serial: u64,
-    messages: BTreeMap<String, Vec<Arc<StoredVersionRecord>>>,
+    messages: BTreeMap<String, VersionChain>,
+    open_stream_count: usize,
     replay: BTreeMap<u64, Arc<StoredVersionRecord>>,
     // Parallel map: `delivery_serial -> server-side append time (ms)`.
     // Used by `purge_before` for TTL eviction without touching read paths.
     created_at: BTreeMap<u64, i64>,
+}
+
+// All indexes and replay are updated under the existing store write lock. No
+// second lock is acquired. Retained records are immutable; only purge rebuilds
+// indexes. Import order is independent of version-serial order.
+#[derive(Clone, Default)]
+struct VersionChain {
+    entries: Vec<Arc<StoredVersionRecord>>,
+    versions: HashSet<VersionSerial>,
+    operations: HashMap<String, usize>,
+    latest: Option<usize>,
+    append_count: usize,
+}
+
+impl VersionChain {
+    fn latest(&self) -> Option<&Arc<StoredVersionRecord>> {
+        self.latest.map(|index| &self.entries[index])
+    }
+
+    fn validate_incoming(&self, record: &StoredVersionRecord) -> Result<()> {
+        // The full-chain validator remains available for import/repair callers.
+        // Every retained predecessor was validated when inserted. Comparing its
+        // chain identity plus indexed uniqueness is sufficient for one new row.
+        if let Some(first) = self.entries.first() {
+            ensure_same_chain(&first.message, &record.message)?;
+        }
+        if self.versions.contains(record.version_serial()) {
+            return Err(Error::InvalidMessageFormat(format!(
+                "duplicate version_serial {} in version chain",
+                record.version_serial().as_str()
+            )));
+        }
+        Ok(())
+    }
+
+    fn push(&mut self, record: Arc<StoredVersionRecord>) {
+        let index = self.entries.len();
+        if self
+            .latest()
+            .is_none_or(|latest| record.version_serial() > latest.version_serial())
+        {
+            self.latest = Some(index);
+        }
+        self.versions.insert(record.version_serial().clone());
+        if let Some(operation) = record
+            .envelope
+            .as_ref()
+            .and_then(|envelope| envelope.idempotency.as_ref())
+        {
+            // Imports historically permit repeated operation keys; preserve the
+            // first inserted matching receipt, including after partial purge.
+            self.operations
+                .entry(operation.cache_key.clone())
+                .or_insert(index);
+        }
+        self.append_count += usize::from(record.message.action == MessageAction::Append);
+        self.entries.push(record);
+    }
+
+    fn remove(&mut self, version: &VersionSerial) {
+        let entries = std::mem::take(&mut self.entries);
+        self.versions.clear();
+        self.operations.clear();
+        self.latest = None;
+        self.append_count = 0;
+        for entry in entries {
+            if entry.version_serial() != version {
+                self.push(entry);
+            }
+        }
+    }
 }
 
 impl Default for MemoryVersionChannel {
@@ -33,6 +105,7 @@ impl Default for MemoryVersionChannel {
             stream_id: uuid::Uuid::new_v4().to_string(),
             next_delivery_serial: 1,
             messages: BTreeMap::new(),
+            open_stream_count: 0,
             replay: BTreeMap::new(),
             created_at: BTreeMap::new(),
         }
@@ -124,22 +197,27 @@ impl VersionStore for MemoryVersionStore {
 
         let message_serial = record.message_serial().as_str().to_owned();
         if let Some(chain) = channel_state.messages.get(&message_serial) {
-            validate_version_chain_iter(
-                chain
-                    .iter()
-                    .map(|entry| &entry.message)
-                    .chain(std::iter::once(&record.message)),
-            )?;
+            chain.validate_incoming(&record)?;
         } else {
             validate_version_chain(std::slice::from_ref(&record.message))?;
         }
 
+        let was_open = channel_state
+            .messages
+            .get(&message_serial)
+            .and_then(VersionChain::latest)
+            .is_some_and(|entry| entry.is_open_ai_stream());
         let record = Arc::new(record);
         channel_state
             .messages
-            .entry(message_serial)
+            .entry(message_serial.clone())
             .or_default()
             .push(Arc::clone(&record));
+        let is_open = channel_state.messages[&message_serial]
+            .latest()
+            .is_some_and(|entry| entry.is_open_ai_stream());
+        channel_state.open_stream_count =
+            channel_state.open_stream_count - usize::from(was_open) + usize::from(is_open);
         channel_state
             .created_at
             .insert(record.delivery_serial(), now_ms());
@@ -161,11 +239,7 @@ impl VersionStore for MemoryVersionStore {
         if let Some(current) = channel_state
             .messages
             .get(request.record.message_serial().as_str())
-            .and_then(|chain| {
-                chain
-                    .iter()
-                    .max_by(|left, right| left.version_serial().cmp(right.version_serial()))
-            })
+            .and_then(VersionChain::latest)
         {
             return Ok(VersionCreateResult::Conflict {
                 current: Some(current.as_ref().clone()),
@@ -181,16 +255,7 @@ impl VersionStore for MemoryVersionStore {
         if request.record.is_open_ai_stream()
             && let Some(limit) = request.limits.max_open_streaming_messages_per_channel
         {
-            let open = channel_state
-                .messages
-                .values()
-                .filter_map(|chain| {
-                    chain
-                        .iter()
-                        .max_by(|left, right| left.version_serial().cmp(right.version_serial()))
-                })
-                .filter(|record| record.is_open_ai_stream())
-                .count();
+            let open = channel_state.open_stream_count;
             if open >= limit {
                 return Ok(VersionCreateResult::Rejected(
                     VersionCreateRejection::OpenStreamingMessages { limit },
@@ -209,10 +274,14 @@ impl VersionStore for MemoryVersionStore {
             )));
         }
         let stored_record = Arc::new(record.clone());
-        channel_state.messages.insert(
-            record.message_serial().as_str().to_string(),
-            vec![Arc::clone(&stored_record)],
-        );
+        channel_state.open_stream_count += usize::from(record.is_open_ai_stream());
+        channel_state
+            .messages
+            .insert(record.message_serial().as_str().to_string(), {
+                let mut chain = VersionChain::default();
+                chain.push(Arc::clone(&stored_record));
+                chain
+            });
         channel_state.created_at.insert(delivery_serial, now_ms());
         channel_state.replay.insert(delivery_serial, stored_record);
         channel_state.next_delivery_serial = delivery_serial.saturating_add(1);
@@ -237,13 +306,10 @@ impl VersionStore for MemoryVersionStore {
         };
 
         if let Some(incoming) = request.idempotency.as_ref()
-            && let Some(existing) = chain.iter().find(|record| {
-                record
-                    .envelope
-                    .as_ref()
-                    .and_then(|envelope| envelope.idempotency.as_ref())
-                    .is_some_and(|operation| operation.cache_key == incoming.cache_key)
-            })
+            && let Some(existing) = chain
+                .operations
+                .get(&incoming.cache_key)
+                .map(|&index| &chain.entries[index])
         {
             let existing_idempotency = existing
                 .envelope
@@ -263,12 +329,9 @@ impl VersionStore for MemoryVersionStore {
             });
         }
 
-        let current = chain
-            .iter()
-            .max_by(|left, right| left.version_serial().cmp(right.version_serial()))
-            .ok_or_else(|| {
-                Error::InvalidMessageFormat("version chain must not be empty".to_string())
-            })?;
+        let current = chain.latest().ok_or_else(|| {
+            Error::InvalidMessageFormat("version chain must not be empty".to_string())
+        })?;
         if !request.expected.matches(current) {
             return Ok(VersionMutationResult::Conflict {
                 current: Some(current.as_ref().clone()),
@@ -282,10 +345,7 @@ impl VersionStore for MemoryVersionStore {
                 ));
             }
             if let Some(limit) = request.limits.max_appends_per_message {
-                let append_count = chain
-                    .iter()
-                    .filter(|record| record.message.action == MessageAction::Append)
-                    .count();
+                let append_count = chain.append_count;
                 if append_count >= limit {
                     return Ok(VersionMutationResult::Rejected(
                         VersionMutationRejection::AppendCount { limit },
@@ -309,16 +369,7 @@ impl VersionStore for MemoryVersionStore {
             && record.is_open_ai_stream()
             && let Some(limit) = request.limits.max_open_streaming_messages_per_channel
         {
-            let open = channel_state
-                .messages
-                .values()
-                .filter_map(|entries| {
-                    entries
-                        .iter()
-                        .max_by(|left, right| left.version_serial().cmp(right.version_serial()))
-                })
-                .filter(|entry| entry.is_open_ai_stream())
-                .count();
+            let open = channel_state.open_stream_count;
             if open >= limit {
                 return Ok(VersionMutationResult::Rejected(
                     VersionMutationRejection::OpenStreamingMessages { limit },
@@ -326,18 +377,16 @@ impl VersionStore for MemoryVersionStore {
             }
         }
 
-        validate_version_chain_iter(
-            chain
-                .iter()
-                .map(|entry| &entry.message)
-                .chain(std::iter::once(&record.message)),
-        )?;
+        chain.validate_incoming(&record)?;
         if channel_state.replay.contains_key(&delivery_serial) {
             return Err(Error::InvalidMessageFormat(format!(
                 "duplicate delivery_serial {delivery_serial} in version replay log"
             )));
         }
 
+        channel_state.open_stream_count = channel_state.open_stream_count
+            - usize::from(current.is_open_ai_stream())
+            + usize::from(record.is_open_ai_stream());
         let stored_record = Arc::new(record.clone());
         channel_state
             .messages
@@ -372,8 +421,7 @@ impl VersionStore for MemoryVersionStore {
         };
 
         let latest = chain
-            .iter()
-            .max_by(|left, right| left.version_serial().cmp(right.version_serial()))
+            .latest()
             .ok_or_else(|| Error::InvalidMessageFormat("version chain must not be empty".into()))?;
 
         Ok(Some(latest.as_ref().clone()))
@@ -405,8 +453,7 @@ impl VersionStore for MemoryVersionStore {
             })
             .map(|(message_serial, chain)| {
                 chain
-                    .iter()
-                    .max_by(|left, right| left.version_serial().cmp(right.version_serial()))
+                    .latest()
                     .map(|record| (message_serial.clone(), record.as_ref().clone()))
                     .ok_or_else(|| {
                         Error::InvalidMessageFormat("version chain must not be empty".into())
@@ -434,7 +481,7 @@ impl VersionStore for MemoryVersionStore {
             });
         };
 
-        let mut items = chain.iter().collect::<Vec<_>>();
+        let mut items = chain.entries.iter().collect::<Vec<_>>();
         items.sort_by(|left, right| left.version_serial().cmp(right.version_serial()));
         if matches!(request.direction, VersionStoreDirection::NewestFirst) {
             items.reverse();
@@ -524,12 +571,7 @@ impl VersionStore for MemoryVersionStore {
         let mut latest = channel_state
             .messages
             .values()
-            .filter_map(|chain| {
-                chain
-                    .iter()
-                    .max_by(|left, right| left.version_serial().cmp(right.version_serial()))
-                    .map(|record| record.as_ref().clone())
-            })
+            .filter_map(|chain| chain.latest().map(|record| record.as_ref().clone()))
             .collect::<Vec<_>>();
 
         latest.sort_by_key(StoredVersionRecord::history_serial);
@@ -591,8 +633,16 @@ impl VersionStore for MemoryVersionStore {
                 };
                 let message_key = record.message_serial().as_str().to_string();
                 if let Some(chain) = state.messages.get_mut(&message_key) {
-                    chain.retain(|entry| entry.version_serial() != record.version_serial());
-                    if chain.is_empty() {
+                    let was_open = chain
+                        .latest()
+                        .is_some_and(|entry| entry.is_open_ai_stream());
+                    chain.remove(record.version_serial());
+                    let is_open = chain
+                        .latest()
+                        .is_some_and(|entry| entry.is_open_ai_stream());
+                    state.open_stream_count =
+                        state.open_stream_count - usize::from(was_open) + usize::from(is_open);
+                    if chain.entries.is_empty() {
                         state.messages.remove(&message_key);
                     }
                 }

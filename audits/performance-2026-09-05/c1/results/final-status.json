@@ -1,0 +1,29 @@
+{
+  "status": "implemented and measured; not closed due to documented broader fixture/lint gaps",
+  "branch": "perf/version-store-indexes",
+  "workspace_tests": {
+    "passed": 1606,
+    "ignored": 1,
+    "log": "workspace-test-redis.log"
+  },
+  "workspace_strict_clippy": "passed",
+  "c1_sql_strict_clippy": "passed",
+  "minimal_selected_full_checks": "passed",
+  "docs_types_and_build": "passed",
+  "core_tests": 400,
+  "adapter_tests": 434,
+  "selected_http_tests": 15,
+  "sql_final_correctness": "passed on PostgreSQL 17.6 and MySQL 8.4.11",
+  "live_native": "passed",
+  "live_ably_mutable": "passed",
+  "live_ably_recovery": "passed",
+  "baseline_memory": "memory-baseline-clean-{1,2,3}",
+  "after_memory": "memory-after-{1,2,3}",
+  "baseline_sql": "sql-baseline-v2-{1,2,3}",
+  "after_sql": "sql-after-final-{1,2,3}",
+  "gaps": [
+    "Existing native AI golden fixture lacks private-channel auth and expects outdated subscription event",
+    "Additional selected-feature strict lint fails at untouched bootstrap/push/queue.rs:257",
+    "No production multi-node/soak capacity or large-dataset migration validation"
+  ]
+}

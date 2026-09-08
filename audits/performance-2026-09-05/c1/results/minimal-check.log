@@ -1,0 +1,65 @@
+cwd: /Users/radudiaconu/Desktop/Code/Rust/sockudo
+command: cargo check -p sockudo --no-default-features
+    Checking indexmap v2.14.0
+    Checking num-traits v0.2.19
+    Checking zerocopy v0.8.55
+    Checking serde_json v1.0.151
+    Checking crypto-common v0.1.7
+    Checking tower v0.5.3
+    Checking flate2 v1.1.9
+   Compiling rustls v0.23.42
+    Checking prost-types v0.14.4
+    Checking futures-executor v0.3.33
+    Checking tracing-log v0.2.0
+    Checking either v1.16.0
+    Checking digest v0.10.7
+    Checking futures v0.3.33
+    Checking sha1 v0.10.7
+    Checking tower-http v0.6.11
+    Checking h2 v0.4.16
+    Checking toml_edit v0.22.27
+    Checking num-integer v0.1.46
+    Checking rmp v0.8.15
+    Checking ordered-float v2.10.1
+    Checking chrono v0.4.45
+    Checking ordered-float v5.3.0
+    Checking jmespath v0.5.0
+    Checking tracing-subscriber v0.3.23
+    Checking metrics-exporter-tcp v0.11.2
+    Checking num-bigint v0.4.8
+    Checking serde-value v0.7.0
+    Checking rmp-serde v1.3.1
+    Checking serde-aux v4.7.0
+    Checking simple_asn1 v0.6.4
+    Checking toml v0.8.23
+    Checking jsonwebtoken v11.0.0
+    Checking ppv-lite86 v0.2.21
+    Checking ahash v0.8.12
+    Checking sonic-rs v0.5.8
+    Checking rand_chacha v0.9.0
+    Checking rand v0.9.5
+    Checking tokio-rustls v0.26.4
+    Checking hyper v1.11.0
+    Checking tungstenite v0.29.0
+    Checking metrics-util v0.20.4
+    Checking sockudo-protocol v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-protocol)
+    Checking sockudo-filter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-filter)
+    Checking metrics-exporter-prometheus v0.18.3
+    Checking tokio-tungstenite v0.29.0
+    Checking hyper-util v0.1.20
+    Checking axum v0.8.9
+    Checking hyper-tls v0.6.0
+    Checking hyper-rustls v0.27.9
+    Checking axum-server v0.8.0
+    Checking reqwest v0.12.28
+    Checking sockudo-ws v2.0.1
+    Checking sockudo-core v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-core)
+    Checking sockudo-metrics v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-metrics)
+    Checking sockudo-webhook v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-webhook)
+    Checking sockudo-cache v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-cache)
+    Checking sockudo-app v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-app)
+    Checking sockudo-queue v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-queue)
+    Checking sockudo-rate-limiter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-rate-limiter)
+    Checking sockudo-adapter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-adapter)
+    Checking sockudo v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-server)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 16.23s

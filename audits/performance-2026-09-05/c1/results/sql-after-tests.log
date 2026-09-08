@@ -1,0 +1,156 @@
+   Compiling sockudo v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-server)
+    Finished `release` profile [optimized] target(s) in 52.20s
+     Running unittests src/main.rs (target/release/deps/sockudo-a363abb426852f6e)
+
+running 2 tests
+C1,postgres,16,1,0,5160000
+C1A,postgres,16,1,0,3328958
+C1,postgres,16,1,1,2325666
+C1A,postgres,16,1,1,2738334
+C1,postgres,16,1,2,2594083
+C1A,postgres,16,1,2,2657000
+C1,postgres,16,1,3,2395542
+C1A,postgres,16,1,3,2557209
+C1,postgres,16,1,4,2030000
+C1A,postgres,16,1,4,2210209
+C1,postgres,16,1,5,2303667
+C1A,postgres,16,1,5,2321875
+C1,postgres,16,1,6,2102083
+C1A,postgres,16,1,6,1908000
+C1,postgres,16,1,7,1815292
+C1A,postgres,16,1,7,2230459
+C1,postgres,16,1,8,1819375
+
+thread 'history::c1_tests::c1_sql_append_caps_import_duplicate_and_purge' (2274927) panicked at crates/sockudo-server/src/history/c1_tests.rs:210:18:
+called `Result::unwrap()` on an `Err` value: Internal("failed to install append count trigger: error returned from database: 1295 (HY000): This command is not supported in the prepared statement protocol yet")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test history::c1_tests::c1_sql_append_caps_import_duplicate_and_purge ... FAILED
+C1A,postgres,16,1,8,2275917
+C1,postgres,16,1,9,1904208
+C1A,postgres,16,1,9,1856833
+C1,postgres,16,1,10,1818083
+C1A,postgres,16,1,10,2356208
+C1,postgres,16,8,0,10569792
+C1A,postgres,16,8,0,4940792
+C1,postgres,16,8,1,3776000
+C1A,postgres,16,8,1,4074000
+C1,postgres,16,8,2,3710459
+C1A,postgres,16,8,2,4181958
+C1,postgres,16,8,3,4469208
+C1A,postgres,16,8,3,3887667
+C1,postgres,16,8,4,3641084
+C1A,postgres,16,8,4,4011166
+C1,postgres,16,8,5,3711375
+C1A,postgres,16,8,5,4118916
+C1,postgres,16,8,6,3549292
+C1A,postgres,16,8,6,4175083
+C1,postgres,16,8,7,4124000
+C1A,postgres,16,8,7,3832916
+C1,postgres,16,8,8,4037083
+C1A,postgres,16,8,8,4080583
+C1,postgres,16,8,9,3588375
+C1A,postgres,16,8,9,3942416
+C1,postgres,16,8,10,3531583
+C1A,postgres,16,8,10,3945334
+C1,postgres,128,1,0,1828500
+C1A,postgres,128,1,0,2211542
+C1,postgres,128,1,1,2133792
+C1A,postgres,128,1,1,1916042
+C1,postgres,128,1,2,2211292
+C1A,postgres,128,1,2,2098250
+C1,postgres,128,1,3,1933958
+C1A,postgres,128,1,3,2218208
+C1,postgres,128,1,4,1826708
+C1A,postgres,128,1,4,2227542
+C1,postgres,128,1,5,1846875
+C1A,postgres,128,1,5,2245291
+C1,postgres,128,1,6,1857041
+C1A,postgres,128,1,6,2217042
+C1,postgres,128,1,7,1874375
+C1A,postgres,128,1,7,3172458
+C1,postgres,128,1,8,1968000
+C1A,postgres,128,1,8,2082416
+C1,postgres,128,1,9,1924083
+C1A,postgres,128,1,9,2096667
+C1,postgres,128,1,10,2173500
+C1A,postgres,128,1,10,2022875
+C1,postgres,128,8,0,3946250
+C1A,postgres,128,8,0,3715834
+C1,postgres,128,8,1,3606750
+C1A,postgres,128,8,1,3460833
+C1,postgres,128,8,2,3464875
+C1A,postgres,128,8,2,3777333
+C1,postgres,128,8,3,3386917
+C1A,postgres,128,8,3,4358292
+C1,postgres,128,8,4,3676916
+C1A,postgres,128,8,4,5395959
+C1,postgres,128,8,5,3596583
+C1A,postgres,128,8,5,3808833
+C1,postgres,128,8,6,3434334
+C1A,postgres,128,8,6,3930500
+C1,postgres,128,8,7,3351333
+C1A,postgres,128,8,7,3550292
+C1,postgres,128,8,8,3556500
+C1A,postgres,128,8,8,3757167
+C1,postgres,128,8,9,3668000
+C1A,postgres,128,8,9,3808833
+C1,postgres,128,8,10,3443542
+C1A,postgres,128,8,10,4004750
+C1,postgres,1024,1,0,2019708
+C1A,postgres,1024,1,0,2201000
+C1,postgres,1024,1,1,2090042
+C1A,postgres,1024,1,1,2158583
+C1,postgres,1024,1,2,1953083
+C1A,postgres,1024,1,2,2214042
+C1,postgres,1024,1,3,2091000
+C1A,postgres,1024,1,3,2139083
+C1,postgres,1024,1,4,2012084
+C1A,postgres,1024,1,4,2202416
+C1,postgres,1024,1,5,2010708
+C1A,postgres,1024,1,5,2125666
+C1,postgres,1024,1,6,2523834
+C1A,postgres,1024,1,6,2435875
+C1,postgres,1024,1,7,1866500
+C1A,postgres,1024,1,7,2122583
+C1,postgres,1024,1,8,2027500
+C1A,postgres,1024,1,8,2156083
+C1,postgres,1024,1,9,2133000
+C1A,postgres,1024,1,9,2108541
+C1,postgres,1024,1,10,1968750
+C1A,postgres,1024,1,10,2141208
+C1,postgres,1024,8,0,3604958
+C1A,postgres,1024,8,0,3961666
+C1,postgres,1024,8,1,3545583
+C1A,postgres,1024,8,1,3810375
+C1,postgres,1024,8,2,3455834
+C1A,postgres,1024,8,2,3583542
+C1,postgres,1024,8,3,4136125
+C1A,postgres,1024,8,3,4328583
+C1,postgres,1024,8,4,3743209
+C1A,postgres,1024,8,4,4147417
+C1,postgres,1024,8,5,4295416
+C1A,postgres,1024,8,5,3937708
+C1,postgres,1024,8,6,4161709
+C1A,postgres,1024,8,6,3762583
+C1,postgres,1024,8,7,3847792
+C1A,postgres,1024,8,7,4007958
+C1,postgres,1024,8,8,3616542
+C1A,postgres,1024,8,8,4101583
+C1,postgres,1024,8,9,3580750
+C1A,postgres,1024,8,9,3864917
+C1,postgres,1024,8,10,3967833
+C1A,postgres,1024,8,10,5324459
+
+thread 'history::c1_tests::c1_sql_fixed_revisions' (2274928) panicked at crates/sockudo-server/src/history/c1_tests.rs:55:18:
+called `Result::unwrap()` on an `Err` value: Internal("failed to install append count trigger: error returned from database: 1295 (HY000): This command is not supported in the prepared statement protocol yet")
+test history::c1_tests::c1_sql_fixed_revisions ... FAILED
+
+failures:
+
+failures:
+    history::c1_tests::c1_sql_append_caps_import_duplicate_and_purge
+    history::c1_tests::c1_sql_fixed_revisions
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 100 filtered out; finished in 4.18s
+
+error: test failed, to rerun pass `-p sockudo --bin sockudo`

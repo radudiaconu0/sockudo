@@ -391,18 +391,30 @@ impl VersionStore for PostgresVersionStore {
         let payload: Vec<u8> = row.get("payload_bytes");
         let current: StoredVersionRecord = sonic_rs::from_slice(&payload)
             .map_err(|e| Error::Internal(format!("Failed to decode mutation predecessor: {e}")))?;
-        let append_count_sql = format!(
-            "SELECT COUNT(*) AS count FROM {} WHERE app_id = $1 AND channel = $2 AND message_serial = $3 AND action = 'message.append'",
-            self.tables.version_entries
-        );
-        let append_count = sqlx::query(sqlx::AssertSqlSafe(append_count_sql.as_str()))
-            .bind(&request.app_id)
-            .bind(&request.channel)
-            .bind(request.message_serial.as_str())
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| Error::Internal(format!("Failed to count message appends: {e}")))?
-            .get::<i64, _>("count") as usize;
+        // The database maintains this retained-row count in the entry's own
+        // transaction, including legacy imports and retention deletes.
+        let append_count = if matches!(
+            request.mutation,
+            sockudo_core::version_store::VersionMutation::Append(_)
+        ) && request.limits.max_appends_per_message.is_some()
+        {
+            let sql = format!(
+                "SELECT append_count FROM {}_ac WHERE app_id = $1 AND channel = $2 AND message_serial = $3",
+                self.tables.version_entries
+            );
+            let count = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(sql.as_str()))
+                .bind(&request.app_id)
+                .bind(&request.channel)
+                .bind(request.message_serial.as_str())
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| Error::Internal(format!("failed to read message append count: {e}")))?
+                .unwrap_or(0);
+            usize::try_from(count)
+                .map_err(|_| Error::Internal("invalid retained append count".into()))?
+        } else {
+            0
+        };
         let delivery_serial = (stream.get::<i64, _>("next_delivery_serial") as u64)
             .max(current.delivery_serial().saturating_add(1));
         let outcome = request.apply_to(&current, &stream_id, delivery_serial, append_count)?;

@@ -1,0 +1,24 @@
+NOTICE:  drop cascades to 21 other objects
+DETAIL:  drop cascades to table c1_31c837853e0143c1_version_streams
+drop cascades to table c1_31c837853e0143c1_version_messages
+drop cascades to table c1_31c837853e0143c1_version_entries
+drop cascades to table c1_8a475743e2404141_version_streams
+drop cascades to table c1_8a475743e2404141_version_messages
+drop cascades to table c1_8a475743e2404141_version_entries
+drop cascades to table c1_8a475743e2404141_version_entries_c1
+drop cascades to table c1_8a475743e2404141_version_entries_ac
+drop cascades to function c1_8a475743e2404141_version_entries_acf()
+drop cascades to table c1_e9c1e8fb079f4cb5_version_streams
+drop cascades to table c1_e9c1e8fb079f4cb5_version_messages
+drop cascades to table c1_e9c1e8fb079f4cb5_version_entries
+drop cascades to table c1_e9c1e8fb079f4cb5_version_entries_c1
+drop cascades to table c1_e9c1e8fb079f4cb5_version_entries_ac
+drop cascades to function c1_e9c1e8fb079f4cb5_version_entries_acf()
+drop cascades to table c1_8592bb041a9b44d6_version_streams
+drop cascades to table c1_8592bb041a9b44d6_version_messages
+drop cascades to table c1_8592bb041a9b44d6_version_entries
+drop cascades to table c1_8592bb041a9b44d6_version_entries_c1
+drop cascades to table c1_8592bb041a9b44d6_version_entries_ac
+drop cascades to function c1_8592bb041a9b44d6_version_entries_acf()
+DROP SCHEMA
+CREATE SCHEMA

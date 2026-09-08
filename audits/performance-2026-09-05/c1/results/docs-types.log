@@ -1,0 +1,10 @@
+cwd: /Users/radudiaconu/Desktop/Code/Rust/sockudo/docs
+command: npm run types:check
+
+> docs-fumadocs@0.0.0 types:check
+> fumadocs-mdx && next typegen && tsc --noEmit
+
+[MDX] generated files in 6.700041999999996ms
+Generating route types...
+[MDX] generated files in 4.603875000000016ms
+✓ Types generated successfully

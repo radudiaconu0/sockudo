@@ -365,3 +365,11 @@ pub async fn create_version_store(
         }
     }
 }
+
+#[cfg(all(
+    test,
+    feature = "postgres",
+    feature = "mysql",
+    feature = "versioned-messages"
+))]
+mod c1_tests;

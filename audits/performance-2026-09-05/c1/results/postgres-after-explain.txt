@@ -1,0 +1,7 @@
+Index Scan using c1_614677e1d7bf4b2b_version_entries_ac_pkey on c1_614677e1d7bf4b2b_version_entries_ac  (cost=0.27..8.29 rows=1 width=8) (actual time=0.015..0.016 rows=1 loops=1)
+  Index Cond: ((app_id = 'c1'::text) AND (channel = 'r1024_c8_s10_0'::text) AND (message_serial = 'msg:1'::text))
+  Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=79
+Planning Time: 0.147 ms
+Execution Time: 0.030 ms

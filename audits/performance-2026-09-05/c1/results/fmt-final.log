@@ -1,0 +1,2 @@
+cwd: /Users/radudiaconu/Desktop/Code/Rust/sockudo
+command: cargo fmt --all

@@ -1,0 +1,93 @@
+   Compiling aws-lc-sys v0.43.0
+   Compiling sockudo-protocol v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-protocol)
+   Compiling tikv-jemalloc-sys v0.7.1+5.3.1-0-g81034ce1f1373e37dc865038e1bc8eeecf559ce8
+   Compiling aws-lc-rs v1.17.3
+   Compiling rustls v0.23.42
+   Compiling rustls-webpki v0.103.13
+   Compiling jsonwebtoken v11.0.0
+   Compiling sockudo-core v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-core)
+   Compiling tokio-rustls v0.26.4
+   Compiling sqlx-core v0.9.0
+   Compiling hyper-rustls v0.27.9
+   Compiling axum-server v0.8.0
+   Compiling redis v1.4.1
+   Compiling reqwest v0.12.28
+   Compiling sqlx-mysql v0.9.0
+   Compiling sqlx-postgres v0.9.0
+   Compiling tikv-jemallocator v0.7.0
+   Compiling sqlx v0.9.0
+   Compiling sockudo-metrics v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-metrics)
+   Compiling sockudo-webhook v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-webhook)
+   Compiling sockudo-queue v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-queue)
+   Compiling sockudo-app v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-app)
+   Compiling sockudo-cache v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-cache)
+   Compiling sockudo-rate-limiter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-rate-limiter)
+   Compiling sockudo-adapter v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-adapter)
+   Compiling sockudo v5.0.1 (/Users/radudiaconu/Desktop/Code/Rust/sockudo/crates/sockudo-server)
+    Finished `release` profile [optimized] target(s) in 5m 01s
+     Running unittests src/main.rs (target/release/deps/sockudo-3e496999c32b843d)
+
+running 1 test
+C1,postgres,16,1,0,5038750
+C1,postgres,16,1,1,6219709
+C1,postgres,16,1,2,6323709
+C1,postgres,16,1,3,3068791
+C1,postgres,16,1,4,2852958
+C1,postgres,16,1,5,3193458
+C1,postgres,16,1,6,3394625
+C1,postgres,16,1,7,3629334
+C1,postgres,16,1,8,3452167
+C1,postgres,16,1,9,3125125
+C1,postgres,16,1,10,2686250
+C1,postgres,16,8,0,13592416
+C1,postgres,16,8,1,4652625
+C1,postgres,16,8,2,5079625
+C1,postgres,16,8,3,4503458
+C1,postgres,16,8,4,5404792
+C1,postgres,16,8,5,5095584
+C1,postgres,16,8,6,12017000
+C1,postgres,16,8,7,4572917
+C1,postgres,16,8,8,5263958
+C1,postgres,16,8,9,4473292
+C1,postgres,16,8,10,4667250
+C1,postgres,128,1,0,4553000
+C1,postgres,128,1,1,6162666
+C1,postgres,128,1,2,4595416
+C1,postgres,128,1,3,4146583
+C1,postgres,128,1,4,4816333
+C1,postgres,128,1,5,4071083
+C1,postgres,128,1,6,2455875
+C1,postgres,128,1,7,2287667
+C1,postgres,128,1,8,2427041
+C1,postgres,128,1,9,2228791
+C1,postgres,128,1,10,2183791
+C1,postgres,128,8,0,4897041
+C1,postgres,128,8,1,3918541
+C1,postgres,128,8,2,3631000
+C1,postgres,128,8,3,4025333
+C1,postgres,128,8,4,4466667
+C1,postgres,128,8,5,4156542
+C1,postgres,128,8,6,4257625
+C1,postgres,128,8,7,6119208
+C1,postgres,128,8,8,4284250
+C1,postgres,128,8,9,3960083
+C1,postgres,128,8,10,5438750
+C1,postgres,1024,1,0,3124125
+C1,postgres,1024,1,1,2762500
+C1,postgres,1024,1,2,3016417
+C1,postgres,1024,1,3,2753291
+C1,postgres,1024,1,4,2645583
+C1,postgres,1024,1,5,2738250
+C1,postgres,1024,1,6,2774583
+C1,postgres,1024,1,7,2785500
+C1,postgres,1024,1,8,2694541
+C1,postgres,1024,1,9,2742875
+C1,postgres,1024,1,10,2712708
+test history::c1_tests::c1_sql_fixed_revisions has been running for over 60 seconds
+C1,postgres,1024,8,0,5560792
+C1,postgres,1024,8,1,5275333
+C1,postgres,1024,8,2,5168458
+C1,postgres,1024,8,3,4704958
+C1,postgres,1024,8,4,5513875
+C1,postgres,1024,8,5,4549000
+C1,postgres,1024,8,6,5136125

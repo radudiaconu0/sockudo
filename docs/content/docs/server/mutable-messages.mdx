@@ -44,8 +44,35 @@ position, writes the version, and stores any idempotency receipt together. A
 failed transaction exposes neither a version nor a delivery gap. Concurrent
 appends retry from the newest aggregate, so each accepted fragment appears once
 and in commit order. Accumulated-byte, append-count, open-stream, and terminal
-state checks are part of that transaction; in-memory counters are observability
-only.
+state checks are part of that transaction. The memory version store maintains
+latest-version, version-identity, idempotency-receipt and retained append-count
+indexes under the same lock as the version chain and replay log. Latest selection
+uses the greatest version serial, including for out-of-order imported records.
+Retention removes corresponding index entries; it does not reset the stream ID
+or its delivery allocator. Full-chain validation remains available for import
+and repair tooling.
+
+PostgreSQL and MySQL maintain the same retained append count in a small companion
+table (`<version_entries_table>_ac`). Insert/delete triggers update it within the
+entry write transaction, including imports, duplicate insert handling, rollback,
+and retention deletes. Updates and deletes do not query the count; capped appends
+read one indexed counter. Delivery allocation and mutation transaction boundaries
+are unchanged.
+
+The first startup after upgrading installs the counter table and triggers and
+backfills existing entries while temporarily locking version-entry writes. Plan
+this initialization for a maintenance window on large stores. The database role
+needs permission to create tables and triggers, PostgreSQL trigger functions, and
+MySQL table locks. Concurrent installers serialize; a completion marker
+(`<version_entries_table>_c1`) is written only after backfill succeeds. Interrupted
+installation retries on startup. Subsequent startups skip the backfill.
+
+Include the companion table, marker and triggers in consistent database backups.
+Older server versions can continue inserting and deleting entries because the
+database triggers maintain the count. For manual repair that changes entry actions
+or truncates entries, stop writers, validate the repaired version chains, remove
+the completion marker row, and restart to rebuild counts before serving mutations.
+Do not independently edit the counter table during normal operation.
 
 `op_id` is scoped by app, channel, message, and action. Replaying the same ID
 with the same canonical operation returns the original acknowledgement without
