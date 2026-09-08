@@ -1,2 +1,0 @@
-15:54:46.340 Ably: ConnectionManager.activateTransport(): error = [_ErrorInfo: unable to recover connection (connection expired); statusCode=400; code=80008; see https://help.ably.io/error/80008 ]
-{"ok":true,"endpoint":"127.0.0.1","port":25464,"tls":false,"channel":"private-ai-ably-recovery-1788872086254","serial":"00000001788872086286:c88168cf-3a30-4ef9-b995-f1e1bc2a480c:00000000000000000009","recoveredFragments":[" world"],"latest":"Hello world"}
