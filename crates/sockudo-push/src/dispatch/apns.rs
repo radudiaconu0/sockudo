@@ -610,13 +610,15 @@ fn apply_broadcast_expiration(
     Ok(())
 }
 
+/// Stable per publish and recipient so APNs can collapse duplicate deliveries when Sockudo
+/// retries a request after a 429/5xx. Retries move jobs into new deferred batches, so the
+/// batch ID must not participate in the identifier.
 fn deterministic_apns_id(job: &DeliveryJob) -> String {
     let digest = stable_hash(
         format!(
-            "{}:{}:{}:{}",
+            "{}:{}:{}",
             job.app_id,
             job.publish_id,
-            job.batch_id,
             job.recipient.token_hash()
         )
         .as_bytes(),

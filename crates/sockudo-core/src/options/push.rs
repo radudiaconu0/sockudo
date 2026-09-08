@@ -298,6 +298,9 @@ pub struct PushApnsConfig {
     pub tcp_keepalive_secs: u64,
     pub http2_keepalive_interval_secs: u64,
     pub http2_keepalive_timeout_secs: u64,
+    /// Optional PEM bundle of extra root certificates trusted for APNs, broadcast, and
+    /// channel-management TLS. Empty keeps the built-in public roots only.
+    pub ca_certificate_path: String,
 }
 
 impl Default for PushApnsConfig {
@@ -319,6 +322,7 @@ impl Default for PushApnsConfig {
             tcp_keepalive_secs: 60,
             http2_keepalive_interval_secs: 30,
             http2_keepalive_timeout_secs: 10,
+            ca_certificate_path: String::new(),
         }
     }
 }
@@ -757,6 +761,7 @@ mod tests {
             std::env::set_var("PUSH_APNS_TCP_KEEPALIVE_SECS", "50");
             std::env::set_var("PUSH_APNS_HTTP2_KEEPALIVE_INTERVAL_SECS", "25");
             std::env::set_var("PUSH_APNS_HTTP2_KEEPALIVE_TIMEOUT_SECS", "8");
+            std::env::set_var("PUSH_APNS_CA_CERTIFICATE_PATH", "/etc/sockudo/apns-ca.pem");
             std::env::set_var("PUSH_WEBPUSH_ENABLED", "true");
             std::env::set_var("PUSH_HMS_ENABLED", "true");
             std::env::set_var("PUSH_WNS_ENABLED", "true");
@@ -828,6 +833,10 @@ mod tests {
         assert_eq!(options.push.apns.max_idle_connections_per_host, 96);
         assert_eq!(options.push.apns.tcp_keepalive_secs, 50);
         assert_eq!(options.push.apns.http2_keepalive_interval_secs, 25);
+        assert_eq!(
+            options.push.apns.ca_certificate_path,
+            "/etc/sockudo/apns-ca.pem"
+        );
         assert_eq!(options.push.apns.http2_keepalive_timeout_secs, 8);
         assert!(options.push.webpush_enabled);
         assert!(options.push.hms_enabled);

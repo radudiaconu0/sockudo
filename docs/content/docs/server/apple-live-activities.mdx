@@ -67,7 +67,12 @@ max_idle_connections_per_host = 256
 tcp_keepalive_secs = 60
 http2_keepalive_interval_secs = 30
 http2_keepalive_timeout_secs = 10
+ca_certificate_path = "" # optional extra PEM roots
 ```
+
+`ca_certificate_path` adds root certificates to the built-in public roots for every APNs, broadcast,
+and channel-management connection. Use it for private egress proxies or for staged rollouts against
+an APNs-compatible mock; leave it empty to trust only Apple's public certificate chain.
 
 Use all three sandbox hosts for sandbox tokens and channels:
 
@@ -196,6 +201,16 @@ DELETE /apps/{appId}/push/liveActivities/channels/{channelId}
 Deletion is irreversible, although APNs may still deliver an already stored message after channel
 deletion. Never reuse or publish to a deleted ID.
 
+## Local end-to-end example
+
+`examples/apple-live-activities-backend` runs the whole path without Apple credentials: a mock
+APNs in Docker that enforces Apple's wire contract, a ride-tracking backend built on the Node
+server SDK, and a scenario that verifies every request the server makes. Its `run.sh` builds
+Sockudo with `push-apns,monolith` and trusts the mock's CA through `ca_certificate_path`. The
+example also ships an iOS Simulator app with a Live Activity widget that exercises the Swift token
+observers against the backend; the Simulator needs real sandbox APNs credentials to display pushed
+updates, because `simctl push` cannot deliver `liveactivity` pushes.
+
 ## Swift token observation
 
 ```swift
@@ -227,7 +242,9 @@ provider latency. More sockets do not guarantee more APNs throughput.
 
 The APNs device payload limit is 4096 bytes and the broadcast limit is 5120 bytes. Sockudo checks
 the final serialized body for the actual destination. APNs 429 and 5xx responses are retried with
-jitter and `Retry-After`; 5xx retries are held for Apple's required 15-minute delay. Invalid
+jitter and `Retry-After`. A 5xx response holds only that payload for Apple's required 15-minute
+delay; other Live Activity deliveries keep flowing, and repeated 5xx failures trip the normal
+provider circuit breaker. Retried requests reuse the same `apns-id` or `apns-request-id`. Invalid
 tokens, invalid channels, configuration failures, and caller
 payload errors are terminal and observable without leaking tokens. Reusing `publishId` makes
 application retries deterministic. Sockudo supplies a deterministic `apns-id` for direct attempts

@@ -56,6 +56,10 @@ pub(super) fn apply(options: &mut ServerOptions) -> Result<(), Box<dyn std::erro
             "PUSH_APNS_MANAGEMENT_ENDPOINT",
             &mut options.push.apns.management_endpoint,
         ),
+        (
+            "PUSH_APNS_CA_CERTIFICATE_PATH",
+            &mut options.push.apns.ca_certificate_path,
+        ),
     ] {
         if let Some(value) = parse_env_optional::<String>(name) {
             *target = value;

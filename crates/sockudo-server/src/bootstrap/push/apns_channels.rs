@@ -25,12 +25,11 @@ pub(crate) async fn create_apns_channel_manager(
             manager_from_store(store, &app_id, &credential_id, &config.push.apns).await?
         } else {
             let http = Arc::new(
-                sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider(http_options(
-                    &config.push.apns,
-                ))
-                .map_err(|error| {
-                    Error::Internal(format!("failed to create APNs HTTP client: {error}"))
-                })?,
+                http_options(&config.push.apns)
+                    .and_then(sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider)
+                    .map_err(|error| {
+                        Error::Internal(format!("failed to create APNs HTTP client: {error}"))
+                    })?,
             );
             sockudo_push::ApnsChannelManager::new(
                 config.push.apns.resolved_bundle_id(),
@@ -79,7 +78,8 @@ async fn manager_from_store(
             })?
             .replace("\\n", "\n");
         let http = Arc::new(
-            sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider(http_options(config))
+            http_options(config)
+                .and_then(sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider)
                 .map_err(|error| {
                     Error::Internal(format!("failed to create APNs HTTP client: {error}"))
                 })?,
@@ -95,13 +95,15 @@ async fn manager_from_store(
         let pem = decrypt_credential_secret(&pem)
             .map_err(|error| Error::Internal(format!("failed to decrypt APNs PEM: {error}")))?;
         let http = Arc::new(
-            sockudo_push::ReqwestProviderHttpClient::new_with_pem_identity_and_options(
-                &pem,
-                http_options(config),
-            )
-            .map_err(|error| {
-                Error::Internal(format!("failed to create APNs PEM HTTP client: {error}"))
-            })?,
+            http_options(config)
+                .and_then(|options| {
+                    sockudo_push::ReqwestProviderHttpClient::new_with_pem_identity_and_options(
+                        &pem, options,
+                    )
+                })
+                .map_err(|error| {
+                    Error::Internal(format!("failed to create APNs PEM HTTP client: {error}"))
+                })?,
         );
         return sockudo_push::ApnsChannelManager::new_with_tls_identity(
             config.resolved_bundle_id(),
@@ -122,16 +124,17 @@ async fn manager_from_store(
             .unwrap_or_default();
         let der = decode_p12(&p12)?;
         let http = Arc::new(
-            sockudo_push::ReqwestProviderHttpClient::new_with_pkcs12_identity_and_options(
-                &der,
-                &password,
-                http_options(config),
-            )
-            .map_err(|error| {
-                Error::Internal(format!(
-                    "failed to create APNs PKCS#12 HTTP client: {error}"
-                ))
-            })?,
+            http_options(config)
+                .and_then(|options| {
+                    sockudo_push::ReqwestProviderHttpClient::new_with_pkcs12_identity_and_options(
+                        &der, &password, options,
+                    )
+                })
+                .map_err(|error| {
+                    Error::Internal(format!(
+                        "failed to create APNs PKCS#12 HTTP client: {error}"
+                    ))
+                })?,
         );
         return sockudo_push::ApnsChannelManager::new_with_tls_identity(
             config.resolved_bundle_id(),
@@ -250,8 +253,26 @@ impl sockudo_push::ProviderTokenSource for ApnsJwtTokenSource {
     }
 }
 
-fn http_options(config: &PushApnsConfig) -> sockudo_push::ProviderHttpClientOptions {
-    sockudo_push::ProviderHttpClientOptions {
+fn http_options(
+    config: &PushApnsConfig,
+) -> std::result::Result<sockudo_push::ProviderHttpClientOptions, String> {
+    apns_provider_http_options(config)
+}
+
+/// Builds the pooled APNs HTTP client options shared by dispatch workers and broadcast channel
+/// management. Reads the optional `[push.apns].ca_certificate_path` PEM bundle once at startup.
+pub(crate) fn apns_provider_http_options(
+    config: &PushApnsConfig,
+) -> std::result::Result<sockudo_push::ProviderHttpClientOptions, String> {
+    let mut additional_root_certificates_pem = Vec::new();
+    let ca_certificate_path = config.ca_certificate_path.trim();
+    if !ca_certificate_path.is_empty() {
+        let pem = fs::read(ca_certificate_path).map_err(|error| {
+            format!("failed to read push.apns.ca_certificate_path {ca_certificate_path:?}: {error}")
+        })?;
+        additional_root_certificates_pem.push(pem);
+    }
+    Ok(sockudo_push::ProviderHttpClientOptions {
         connect_timeout_ms: config.connect_timeout_ms,
         request_timeout_ms: config.request_timeout_ms,
         pool_idle_timeout_secs: config.pool_idle_timeout_secs,
@@ -259,5 +280,6 @@ fn http_options(config: &PushApnsConfig) -> sockudo_push::ProviderHttpClientOpti
         tcp_keepalive_secs: config.tcp_keepalive_secs,
         http2_keepalive_interval_secs: config.http2_keepalive_interval_secs,
         http2_keepalive_timeout_secs: config.http2_keepalive_timeout_secs,
-    }
+        additional_root_certificates_pem,
+    })
 }

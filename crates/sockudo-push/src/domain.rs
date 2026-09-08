@@ -270,7 +270,7 @@ pub enum PushRecipient {
         #[serde(rename = "channelId")]
         channel_id: SecretString,
         /// Must match the immutable storage policy used when the APNs channel was created.
-        #[serde(default)]
+        #[serde(rename = "storagePolicy", default)]
         storage_policy: ApnsChannelStoragePolicy,
     },
     #[serde(rename = "web")]

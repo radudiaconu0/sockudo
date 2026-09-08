@@ -129,6 +129,9 @@ pub struct ProviderHttpClientOptions {
     pub tcp_keepalive_secs: u64,
     pub http2_keepalive_interval_secs: u64,
     pub http2_keepalive_timeout_secs: u64,
+    /// Additional PEM-encoded root certificates trusted for provider TLS in addition to the
+    /// built-in Mozilla roots. Intended for private egress proxies and staged provider mocks.
+    pub additional_root_certificates_pem: Vec<Vec<u8>>,
 }
 
 #[cfg(any(
@@ -148,6 +151,7 @@ impl Default for ProviderHttpClientOptions {
             tcp_keepalive_secs: 60,
             http2_keepalive_interval_secs: 30,
             http2_keepalive_timeout_secs: 10,
+            additional_root_certificates_pem: Vec::new(),
         }
     }
 }
@@ -203,7 +207,7 @@ impl ReqwestProviderHttpClient {
     ) -> Result<Self, String> {
         let identity = reqwest::Identity::from_pkcs12_der(der, password)
             .map_err(|error| format!("invalid APNs PKCS#12 identity: {error}"))?;
-        let client = configured_builder(&options)
+        let client = configured_builder(&options)?
             .use_native_tls()
             .identity(identity)
             .build()
@@ -219,7 +223,7 @@ impl ReqwestProviderHttpClient {
         validate_each_destination: bool,
         identity: Option<reqwest::Identity>,
     ) -> Result<Self, String> {
-        let mut builder = configured_builder(&options).use_rustls_tls();
+        let mut builder = configured_builder(&options)?.use_rustls_tls();
         if let Some(identity) = identity {
             builder = builder.identity(identity);
         }
@@ -238,8 +242,10 @@ impl ReqwestProviderHttpClient {
     feature = "push-hms",
     feature = "push-wns"
 ))]
-fn configured_builder(options: &ProviderHttpClientOptions) -> reqwest::ClientBuilder {
-    reqwest::Client::builder()
+fn configured_builder(
+    options: &ProviderHttpClientOptions,
+) -> Result<reqwest::ClientBuilder, String> {
+    let mut builder = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(options.connect_timeout_ms.max(1)))
         .timeout(Duration::from_millis(options.request_timeout_ms.max(1)))
         .pool_idle_timeout(Duration::from_secs(options.pool_idle_timeout_secs.max(1)))
@@ -252,7 +258,18 @@ fn configured_builder(options: &ProviderHttpClientOptions) -> reqwest::ClientBui
         .http2_keep_alive_timeout(Duration::from_secs(
             options.http2_keepalive_timeout_secs.max(1),
         ))
-        .http2_keep_alive_while_idle(true)
+        .http2_keep_alive_while_idle(true);
+    for pem in &options.additional_root_certificates_pem {
+        let certificates = reqwest::Certificate::from_pem_bundle(pem)
+            .map_err(|error| format!("invalid additional root certificate PEM: {error}"))?;
+        if certificates.is_empty() {
+            return Err("additional root certificate PEM contained no certificates".to_owned());
+        }
+        for certificate in certificates {
+            builder = builder.add_root_certificate(certificate);
+        }
+    }
+    Ok(builder)
 }
 
 #[cfg(any(

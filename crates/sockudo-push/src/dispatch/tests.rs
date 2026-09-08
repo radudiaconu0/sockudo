@@ -346,6 +346,130 @@ async fn apns_live_activity_direct_and_broadcast_requests_follow_activitykit_con
     assert!(!request.headers.contains_key("apns-topic"));
 }
 
+#[test]
+fn apns_live_activity_broadcast_recipient_uses_camel_case_storage_policy_on_the_wire() {
+    let recipient: PushRecipient = sonic_rs::from_str(
+        r#"{"transportType":"apnsLiveActivityBroadcast","channelId":"channel_123","storagePolicy":"mostRecent"}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        recipient,
+        PushRecipient::ApnsLiveActivityBroadcast {
+            channel_id: SecretString::new("channel_123").unwrap(),
+            storage_policy: ApnsChannelStoragePolicy::MostRecent,
+        }
+    );
+    let serialized: Value = sonic_rs::to_value(&recipient).unwrap();
+    assert_eq!(serialized["storagePolicy"].as_str(), Some("mostRecent"));
+    assert!(serialized.get("storage_policy").is_none());
+
+    let defaulted: PushRecipient = sonic_rs::from_str(
+        r#"{"transportType":"apnsLiveActivityBroadcast","channelId":"channel_123"}"#,
+    )
+    .unwrap();
+    assert!(matches!(
+        defaulted,
+        PushRecipient::ApnsLiveActivityBroadcast {
+            storage_policy: ApnsChannelStoragePolicy::NoStorage,
+            ..
+        }
+    ));
+}
+
+#[tokio::test]
+async fn apns_live_activity_request_ids_are_stable_across_deferred_retry_batches() {
+    let dispatcher = ApnsDispatcher::new(
+        "com.example.app",
+        cached_static_token("access-token", now_ms() + 600_000),
+        MockHttpClient::with_responses(vec![]),
+    )
+    .with_live_activities(ApnsLiveActivityDispatchConfig {
+        enabled: true,
+        broadcast_enabled: true,
+        topic: "com.example.app.push-type.liveactivity".to_owned(),
+        bundle_id: "com.example.app".to_owned(),
+        broadcast_base_url: "https://api-broadcast.push.test".to_owned(),
+        default_expiration_secs: 3_600,
+    });
+    let override_payload = ApnsLiveActivityPayload {
+        event: ApnsLiveActivityEvent::Update,
+        timestamp: 1_725_000_000,
+        content_state: json!({"eta": 4}),
+        attributes_type: None,
+        attributes: None,
+        alert: None,
+        stale_date: None,
+        dismissal_date: None,
+        relevance_score: None,
+        input_push_token: false,
+        input_push_channel: None,
+        priority: ApnsLiveActivityPriority::ConservePower,
+    }
+    .provider_override();
+    let job_for = |publish_id: &str, batch_id: &str, recipient: PushRecipient| {
+        let mut job = batch(PushProviderKind::Apns).jobs.remove(0);
+        job.publish_id = publish_id.to_owned();
+        job.batch_id = batch_id.to_owned();
+        job.recipient = recipient;
+        job.rendered_payload = Some(Arc::new(
+            render_provider_payload(
+                PushProviderKind::Apns,
+                &job.payload,
+                std::slice::from_ref(&override_payload),
+            )
+            .unwrap(),
+        ));
+        job
+    };
+    let direct = || PushRecipient::ApnsLiveActivity {
+        activity_token: SecretString::new("aabbcc001122").unwrap(),
+    };
+    let broadcast = || PushRecipient::ApnsLiveActivityBroadcast {
+        channel_id: SecretString::new("channel_123").unwrap(),
+        storage_policy: ApnsChannelStoragePolicy::NoStorage,
+    };
+
+    let first = dispatcher
+        .build_request(&job_for("publish-1", "fast-batch-apns-1", direct()))
+        .await
+        .unwrap();
+    let retried = dispatcher
+        .build_request(&job_for(
+            "publish-1",
+            "fast-batch-apns-1-deferred-1725000900000",
+            direct(),
+        ))
+        .await
+        .unwrap();
+    let other_publish = dispatcher
+        .build_request(&job_for("publish-2", "fast-batch-apns-1", direct()))
+        .await
+        .unwrap();
+    assert_eq!(first.headers["apns-id"], retried.headers["apns-id"]);
+    assert_ne!(first.headers["apns-id"], other_publish.headers["apns-id"]);
+
+    let first_broadcast = dispatcher
+        .build_request(&job_for("publish-1", "fast-batch-apns-1", broadcast()))
+        .await
+        .unwrap();
+    let retried_broadcast = dispatcher
+        .build_request(&job_for(
+            "publish-1",
+            "fast-batch-apns-1-deferred-1725000900000",
+            broadcast(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        first_broadcast.headers["apns-request-id"],
+        retried_broadcast.headers["apns-request-id"]
+    );
+    assert_ne!(
+        first.headers["apns-id"],
+        first_broadcast.headers["apns-request-id"]
+    );
+}
+
 #[tokio::test]
 async fn apns_channel_manager_supports_create_read_list_and_delete() {
     let http = MockHttpClient::with_responses(vec![
@@ -745,6 +869,102 @@ fn weighted_scheduler_downgrades_over_quota_tenants_and_caps_each_lane() {
         3
     );
     assert_ne!(order.first().map(String::as_str), Some("noisy"));
+}
+
+/// Fails the first dispatched batch with the supplied error, then accepts everything.
+struct FailOnceDispatcher {
+    inner: RecordingDispatcher,
+    error: ProviderError,
+    failed: AtomicUsize,
+}
+
+#[async_trait]
+impl PushDispatcher for FailOnceDispatcher {
+    fn provider(&self) -> PushProviderKind {
+        PushProviderKind::Fcm
+    }
+
+    async fn dispatch(&self, batch: DeliveryBatch) -> Vec<DeliveryResult> {
+        let results = self.inner.dispatch(batch).await;
+        if self.failed.fetch_add(1, Ordering::SeqCst) > 0 {
+            return results;
+        }
+        results
+            .into_iter()
+            .map(|mut result| {
+                result.outcome = DeliveryOutcome::Retryable;
+                result.provider_message_id = None;
+                result.error = Some(self.error.clone());
+                result
+            })
+            .collect()
+    }
+
+    async fn health_check(&self) -> HealthStatus {
+        self.inner.health_check().await
+    }
+}
+
+async fn run_two_publishes_with_first_failing(error: ProviderError) -> Vec<String> {
+    let queue = Arc::new(MemoryPushQueue::new());
+    let dispatcher = Arc::new(FailOnceDispatcher {
+        inner: RecordingDispatcher::default(),
+        error,
+        failed: AtomicUsize::new(0),
+    });
+    for publish_id in ["publish-1", "publish-2"] {
+        let mut batch = batch(PushProviderKind::Fcm);
+        batch.publish_id = publish_id.to_owned();
+        batch.jobs[0].publish_id = publish_id.to_owned();
+        queue
+            .produce(
+                PushQueueStage::DeliveryJobs(PushProviderKind::Fcm),
+                batch.queue_key(),
+                PushQueuePayload::DeliveryBatch(Box::new(batch)),
+            )
+            .await
+            .unwrap();
+    }
+    let mut worker =
+        ProviderDispatchWorker::new(PushProviderKind::Fcm, queue.clone(), dispatcher.clone());
+    worker.run_once("fcm").await.unwrap();
+    worker.run_once("fcm").await.unwrap();
+    dispatcher
+        .inner
+        .batches()
+        .await
+        .into_iter()
+        .map(|batch| batch.publish_id)
+        .collect()
+}
+
+#[tokio::test]
+async fn per_payload_retry_hold_does_not_open_the_provider_circuit() {
+    // Apple: "After 15 minutes, you can retry JSON payloads that receive 5XX." The hold
+    // belongs to that payload; other publishes must keep flowing.
+    let dispatched = run_two_publishes_with_first_failing(ProviderError {
+        class: "unavailable".to_owned(),
+        failure_class: ProviderFailureClass::ProviderTransient,
+        reason: Some("InternalServerError".to_owned()),
+        retry_after_ms: Some(now_ms() + 15 * 60 * 1_000),
+    })
+    .await;
+    assert_eq!(
+        dispatched,
+        vec!["publish-1".to_owned(), "publish-2".to_owned()]
+    );
+}
+
+#[tokio::test]
+async fn provider_throttle_retry_after_still_opens_the_circuit() {
+    let dispatched = run_two_publishes_with_first_failing(ProviderError {
+        class: "quota".to_owned(),
+        failure_class: ProviderFailureClass::ProviderQuota,
+        reason: Some("TooManyRequests".to_owned()),
+        retry_after_ms: Some(now_ms() + 60_000),
+    })
+    .await;
+    assert_eq!(dispatched, vec!["publish-1".to_owned()]);
 }
 
 #[tokio::test]

@@ -108,9 +108,9 @@ pub(in crate::bootstrap::push::workers) fn start_apns_provider_workers(
     let mut handles = Vec::new();
     let max_outbound = config.push.dispatch_max_outbound_requests;
     for worker_index in 0..config.push.dispatch_worker_count {
-        let http = match sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider(
-            apns_http_options(&config.push.apns),
-        ) {
+        let http = match apns_http_options(&config.push.apns).and_then(|options| {
+            sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider(options)
+        }) {
             Ok(http) => Arc::new(http),
             Err(error) => {
                 warn!(error = %error, "failed to create apns http client");
@@ -206,12 +206,11 @@ async fn create_stored_apns_dispatcher(
             ApnsJwtTokenSource::new(team_id, key_id, private_key)?,
         ));
         let http = Arc::new(
-            sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider(apns_http_options(
-                apns_config,
-            ))
-            .map_err(|error| {
-                Error::Internal(format!("failed to create APNs HTTP client: {error}"))
-            })?,
+            apns_http_options(apns_config)
+                .and_then(sockudo_push::ReqwestProviderHttpClient::new_for_trusted_provider)
+                .map_err(|error| {
+                    Error::Internal(format!("failed to create APNs HTTP client: {error}"))
+                })?,
         );
         return Ok(
             sockudo_push::ApnsDispatcher::new(topic.to_owned(), token_provider, http)
@@ -224,13 +223,15 @@ async fn create_stored_apns_dispatcher(
         let pem = decrypt_credential_secret(&pem)
             .map_err(|error| Error::Internal(format!("failed to decrypt APNs PEM: {error}")))?;
         let http = Arc::new(
-            sockudo_push::ReqwestProviderHttpClient::new_with_pem_identity_and_options(
-                &pem,
-                apns_http_options(apns_config),
-            )
-            .map_err(|error| {
-                Error::Internal(format!("failed to create APNs PEM HTTP client: {error}"))
-            })?,
+            apns_http_options(apns_config)
+                .and_then(|options| {
+                    sockudo_push::ReqwestProviderHttpClient::new_with_pem_identity_and_options(
+                        &pem, options,
+                    )
+                })
+                .map_err(|error| {
+                    Error::Internal(format!("failed to create APNs PEM HTTP client: {error}"))
+                })?,
         );
         return Ok(
             sockudo_push::ApnsDispatcher::new_with_tls_identity(topic.to_owned(), http)
@@ -252,16 +253,19 @@ async fn create_stored_apns_dispatcher(
             .unwrap_or_default();
         let der = decode_apns_p12(&p12)?;
         let http = Arc::new(
-            sockudo_push::ReqwestProviderHttpClient::new_with_pkcs12_identity_and_options(
-                &der,
-                &p12_password,
-                apns_http_options(apns_config),
-            )
-            .map_err(|error| {
-                Error::Internal(format!(
-                    "failed to create APNs PKCS#12 HTTP client: {error}"
-                ))
-            })?,
+            apns_http_options(apns_config)
+                .and_then(|options| {
+                    sockudo_push::ReqwestProviderHttpClient::new_with_pkcs12_identity_and_options(
+                        &der,
+                        &p12_password,
+                        options,
+                    )
+                })
+                .map_err(|error| {
+                    Error::Internal(format!(
+                        "failed to create APNs PKCS#12 HTTP client: {error}"
+                    ))
+                })?,
         );
         return Ok(
             sockudo_push::ApnsDispatcher::new_with_tls_identity(topic.to_owned(), http)
@@ -292,16 +296,8 @@ fn live_activity_dispatch_config(
 #[cfg(all(feature = "push", feature = "monolith", feature = "push-apns"))]
 fn apns_http_options(
     config: &sockudo_core::options::PushApnsConfig,
-) -> sockudo_push::ProviderHttpClientOptions {
-    sockudo_push::ProviderHttpClientOptions {
-        connect_timeout_ms: config.connect_timeout_ms,
-        request_timeout_ms: config.request_timeout_ms,
-        pool_idle_timeout_secs: config.pool_idle_timeout_secs,
-        max_idle_connections_per_host: config.max_idle_connections_per_host,
-        tcp_keepalive_secs: config.tcp_keepalive_secs,
-        http2_keepalive_interval_secs: config.http2_keepalive_interval_secs,
-        http2_keepalive_timeout_secs: config.http2_keepalive_timeout_secs,
-    }
+) -> std::result::Result<sockudo_push::ProviderHttpClientOptions, String> {
+    crate::bootstrap::push::apns_provider_http_options(config)
 }
 
 #[cfg(all(feature = "push", feature = "monolith", feature = "push-apns"))]
