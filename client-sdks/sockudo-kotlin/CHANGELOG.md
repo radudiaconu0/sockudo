@@ -4,6 +4,7 @@
 
 - Added Pusher-style connection/error listeners (`SockudoConnectionEventListener`, `SockudoError`) while preserving the raw Pusher-compatible `state_change` event.
 - Added typed channel event and auth listeners (`SockudoChannelEventListener.onEvent`, `onSubscriptionSucceeded`, `onAuthenticationFailure`, `onError`) while preserving the raw `bind`/`on` event API.
+- Offloaded decoding and subscriber callbacks onto a dedicated `sockudo-event` thread, with a bounded queue so the WebSocket reader never blocks; queue overflow surfaces a `client_overloaded` error.
 
 ## 2.2.0 - 2026-08-17
 

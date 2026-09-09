@@ -1,10 +1,13 @@
 package io.sockudo.client
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -19,10 +22,13 @@ import okhttp3.MediaType.Companion.toMediaType
 import okio.ByteString.Companion.toByteString
 import java.net.URI
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+
+private const val INBOX_CAPACITY = 256
 
 class SockudoClient(
     val key: String,
@@ -36,7 +42,16 @@ class SockudoClient(
         }
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val eventDispatcher: CoroutineDispatcher =
+        Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "sockudo-event").apply { isDaemon = true }
+        }.asCoroutineDispatcher()
+
+    private val scope = CoroutineScope(SupervisorJob() + eventDispatcher)
+
+    // Decode and subscriber callbacks run on the event dispatcher, never on OkHttp's reader thread.
+    private val inbox = Channel<Any>(capacity = INBOX_CAPACITY)
+
     internal val p = ProtocolPrefix(options.protocolVersion)
     internal val config = ResolvedConfiguration(options, httpClient)
     private val dispatcher = EventDispatcher()
@@ -78,6 +93,19 @@ class SockudoClient(
     init {
         user.attach(this)
         watchlist.attach(this)
+        startEventLoop()
+    }
+
+    private fun startEventLoop() {
+        scope.launch {
+            for (raw in inbox) {
+                try {
+                    handleRawMessage(raw)
+                } catch (error: Throwable) {
+                    reportError(error)
+                }
+            }
+        }
     }
 
     fun on(eventName: String, callback: (Any?, EventMetadata?) -> Unit): EventBindingToken =
@@ -223,6 +251,7 @@ class SockudoClient(
 
     fun close() {
         disconnect()
+        inbox.close()
         scope.cancel()
     }
 
@@ -601,11 +630,15 @@ class SockudoClient(
                     override fun onOpen(webSocket: WebSocket, response: Response) = Unit
 
                     override fun onMessage(webSocket: WebSocket, text: String) {
-                        handleRawMessage(text)
+                        if (inbox.trySend(text).isFailure) {
+                            onInboxOverflow()
+                        }
                     }
 
                     override fun onMessage(webSocket: WebSocket, bytes: okio.ByteString) {
-                        handleRawMessage(bytes)
+                        if (inbox.trySend(bytes).isFailure) {
+                            onInboxOverflow()
+                        }
                     }
 
                     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -618,6 +651,15 @@ class SockudoClient(
                     }
                 },
             )
+    }
+
+    private fun onInboxOverflow() {
+        reportError(
+            SockudoError(
+                message = "Inbound event queue overflow; frames were dropped",
+                code = "client_overloaded",
+            ),
+        )
     }
 
     private fun handleRawMessage(rawMessage: Any) {
