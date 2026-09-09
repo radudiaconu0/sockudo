@@ -1,3 +1,4 @@
+mod append_counts;
 mod store_impl;
 
 use super::*;
@@ -72,6 +73,7 @@ impl MysqlVersionStore {
 
         let store = Self { pool, tables };
         store.ensure_version_tables().await?;
+        store.ensure_append_counts().await?;
         Ok(store)
     }
 

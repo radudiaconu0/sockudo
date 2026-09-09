@@ -329,7 +329,10 @@ pub(crate) fn validate_replay_continuity_iter<'a>(
     Ok(())
 }
 
-fn ensure_same_chain(expected: &VersionedMessage, actual: &VersionedMessage) -> Result<()> {
+pub(crate) fn ensure_same_chain(
+    expected: &VersionedMessage,
+    actual: &VersionedMessage,
+) -> Result<()> {
     if expected.identity.message_serial != actual.identity.message_serial {
         return Err(Error::InvalidMessageFormat(format!(
             "mixed message_serial values in one version chain: {} vs {}",

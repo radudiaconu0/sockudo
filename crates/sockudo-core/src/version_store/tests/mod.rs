@@ -984,3 +984,241 @@ async fn memory_store_replay_log_rebuilds_identical_aggregates() {
         );
     }
 }
+
+#[tokio::test]
+async fn out_of_order_imports_preserve_latest_caps_and_reclaimed_identities() {
+    let store = MemoryVersionStore::new();
+    let mut newest = base_record("msg:index", 10, 3);
+    newest.message.version = version("ver:9", 3);
+    newest.message.action = MessageAction::Delete;
+    let mut oldest = newest.clone();
+    oldest.message.version = version("ver:1", 1);
+    oldest.message.replay_position.delivery_serial = 1;
+    oldest.message.action = MessageAction::Create;
+    let mut middle = oldest.clone();
+    middle.message.version = version("ver:5", 2);
+    middle.message.replay_position.delivery_serial = 2;
+    middle.message.action = MessageAction::Append;
+    middle.message.append_fragment = Some("hello".into());
+    for record in [&newest, &oldest, &middle] {
+        store.append_version(record.clone()).await.unwrap();
+    }
+    let latest = store
+        .get_latest("app", "chat", newest.message_serial())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(latest.version_serial(), newest.version_serial());
+    assert_eq!(latest.message.action, MessageAction::Delete);
+    let mut duplicate = middle.clone();
+    duplicate.message.replay_position.delivery_serial = 4;
+    assert!(store.append_version(duplicate).await.is_err());
+    let mut wrong_history = middle.clone();
+    wrong_history.message.version = version("ver:6", 4);
+    wrong_history.message.replay_position.delivery_serial = 4;
+    wrong_history.message.identity.history_serial = 11;
+    assert!(store.append_version(wrong_history).await.is_err());
+    let request = VersionMutationRequest {
+        app_id: "app".into(),
+        channel: "chat".into(),
+        message_serial: newest.message_serial().clone(),
+        expected: VersionPrecondition::from_record(&newest),
+        version: version("ver:z", 4),
+        mutation: VersionMutation::Append(MessageAppend {
+            data_fragment: "!".into(),
+            extras: None,
+        }),
+        idempotency: None,
+        limits: VersionMutationLimits {
+            max_appends_per_message: Some(1),
+            ..Default::default()
+        },
+    };
+    assert!(matches!(
+        store.compare_and_apply(request.clone()).await.unwrap(),
+        VersionMutationResult::Rejected(VersionMutationRejection::AppendCount { limit: 1 })
+    ));
+    assert_eq!(
+        store
+            .stream_state("app", "chat")
+            .await
+            .unwrap()
+            .next_delivery_serial,
+        Some(4)
+    );
+    let replay = store
+        .replay_after(VersionReplayRequest {
+            app_id: "app".into(),
+            channel: "chat".into(),
+            after_delivery_serial: 0,
+            limit: 10,
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        replay
+            .iter()
+            .map(StoredVersionRecord::delivery_serial)
+            .collect::<Vec<_>>(),
+        vec![1, 2, 3]
+    );
+    // Purge removes delivery 1 then 2 although insertion order was 3,1,2.
+    let cutoff = crate::history::now_ms() + 1000;
+    assert_eq!(store.purge_before(cutoff, 1).await.unwrap().0, 1);
+    assert_eq!(store.purge_before(cutoff, 1).await.unwrap().0, 1);
+    assert!(matches!(
+        store.compare_and_apply(request).await.unwrap(),
+        VersionMutationResult::Applied { .. }
+    ));
+    while store.purge_before(cutoff, 10).await.unwrap().1 {}
+    assert!(
+        store
+            .get_latest("app", "chat", newest.message_serial())
+            .await
+            .unwrap()
+            .is_none()
+    );
+    store.append_version(middle.clone()).await.unwrap();
+    assert_eq!(
+        store
+            .get_latest("app", "chat", middle.message_serial())
+            .await
+            .unwrap()
+            .unwrap()
+            .version_serial(),
+        middle.version_serial()
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn independent_channels_preserve_each_channels_cas_and_replay() {
+    let store = MemoryVersionStore::new();
+    let mut tasks = tokio::task::JoinSet::new();
+    for channel in 0..8 {
+        let store = store.clone();
+        tasks.spawn(async move {
+            let mut current = base_record("msg:shared", 1, 1);
+            current.channel = format!("channel-{channel}");
+            store.append_version(current.clone()).await.unwrap();
+            for n in 2..=32 {
+                let request = VersionMutationRequest {
+                    app_id: current.app_id.clone(),
+                    channel: current.channel.clone(),
+                    message_serial: current.message_serial().clone(),
+                    expected: VersionPrecondition::from_record(&current),
+                    version: version(&format!("ver:z{n:04}"), n),
+                    mutation: VersionMutation::Update(MessageFieldDelta::default()),
+                    idempotency: None,
+                    limits: Default::default(),
+                };
+                let VersionMutationResult::Applied { record, .. } =
+                    store.compare_and_apply(request.clone()).await.unwrap()
+                else {
+                    panic!("expected applied mutation")
+                };
+                assert!(matches!(
+                    store.compare_and_apply(request).await.unwrap(),
+                    VersionMutationResult::Conflict { .. }
+                ));
+                current = record;
+            }
+            let replay = store
+                .replay_after(VersionReplayRequest {
+                    app_id: current.app_id.clone(),
+                    channel: current.channel.clone(),
+                    after_delivery_serial: 0,
+                    limit: 100,
+                })
+                .await
+                .unwrap();
+            assert_eq!(replay.len(), 32);
+            assert_eq!(replay.last().unwrap().delivery_serial(), 32);
+        });
+    }
+    while let Some(result) = tasks.join_next().await {
+        result.unwrap();
+    }
+}
+
+#[tokio::test]
+async fn imported_receipt_index_preserves_first_inserted_winner_after_partial_purge() {
+    use crate::message_envelope::{MessageEnvelope, PublishIdempotencyMetadata};
+    let store = MemoryVersionStore::new();
+    let operation = PublishIdempotencyMetadata {
+        cache_key: "imported-operation".into(),
+        payload_fingerprint: "same".into(),
+    };
+    let mut first = base_record("msg:receipt", 1, 1);
+    first.message.version = version("ver:9", 1);
+    first.envelope = Some(MessageEnvelope {
+        idempotency: Some(operation.clone()),
+        ..Default::default()
+    });
+    let mut second = first.clone();
+    second.message.version = version("ver:1", 2);
+    second.message.replay_position.delivery_serial = 2;
+    store.append_version(first.clone()).await.unwrap();
+    store.append_version(second.clone()).await.unwrap();
+    let request = VersionMutationRequest {
+        app_id: "app".into(),
+        channel: "chat".into(),
+        message_serial: first.message_serial().clone(),
+        expected: VersionPrecondition::from_record(&first),
+        version: version("ver:z", 3),
+        mutation: VersionMutation::Update(Default::default()),
+        idempotency: Some(operation),
+        limits: Default::default(),
+    };
+    let VersionMutationResult::Duplicate { record, .. } =
+        store.compare_and_apply(request.clone()).await.unwrap()
+    else {
+        panic!("expected duplicate")
+    };
+    assert_eq!(record.version_serial(), first.version_serial());
+    store
+        .purge_before(crate::history::now_ms() + 1000, 1)
+        .await
+        .unwrap();
+    let latest = store
+        .get_latest("app", "chat", first.message_serial())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(latest.version_serial(), second.version_serial());
+    let VersionMutationResult::Duplicate { record, .. } =
+        store.compare_and_apply(request).await.unwrap()
+    else {
+        panic!("expected surviving duplicate")
+    };
+    assert_eq!(record.version_serial(), second.version_serial());
+}
+
+#[tokio::test]
+async fn purge_of_out_of_order_terminal_winner_restores_open_stream_cap() {
+    let store = MemoryVersionStore::new();
+    let mut terminal = ai_record("msg:open-index", 1, "complete");
+    terminal.message.version = version("ver:9", 1);
+    let mut open = ai_record("msg:open-index", 2, "streaming");
+    open.message.identity.history_serial = terminal.history_serial();
+    open.message.version = version("ver:1", 2);
+    store.append_version(terminal.clone()).await.unwrap();
+    store.append_version(open.clone()).await.unwrap();
+    store
+        .purge_before(crate::history::now_ms() + 1000, 1)
+        .await
+        .unwrap();
+    let result = store
+        .commit_create(VersionCreateRequest {
+            record: ai_record("msg:another", 3, "streaming"),
+            limits: VersionCreateLimits {
+                max_open_streaming_messages_per_channel: Some(1),
+                ..Default::default()
+            },
+        })
+        .await
+        .unwrap();
+    assert!(matches!(
+        result,
+        VersionCreateResult::Rejected(VersionCreateRejection::OpenStreamingMessages { limit: 1 })
+    ));
+}
