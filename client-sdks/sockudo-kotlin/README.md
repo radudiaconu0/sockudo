@@ -19,6 +19,11 @@ Official Kotlin client for Sockudo.
 - Live integration tests against Sockudo on `127.0.0.1:6001`
 - Gradle CI and Maven Central publication workflow
 
+## Requirements
+
+- Java 17 or higher
+- Kotlin 1.9+
+
 ## Installation
 
 Install the published package from Maven Central:
